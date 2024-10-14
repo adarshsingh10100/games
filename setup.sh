@@ -31,9 +31,9 @@ check_python() {
 
 # Function to install Python based on the OS
 install_python() {
-    OS=$(uname -s)
     echo -e "${YELLOW}Python is not installed. Installing Python...${NC}"
-
+    OS=$(uname -s)
+    
     case $OS in
         Linux)
             # Check for specific Linux distributions
@@ -42,6 +42,8 @@ install_python() {
                 sudo apt install -y python3 python3-pip
             elif [ -f /etc/redhat-release ]; then
                 sudo yum install -y python3 python3-pip
+            elif [ -f /etc/arch-release ]; then
+                sudo pacman -Syu python python-pip
             else
                 echo -e "${RED}Unsupported Linux distribution!${NC}"
                 exit 1
@@ -49,7 +51,16 @@ install_python() {
             ;;
         Darwin)
             # For macOS
+            if ! command -v brew &> /dev/null; then
+                echo -e "${RED}Homebrew is not installed. Please install it first.${NC}"
+                exit 1
+            fi
             brew install python
+            ;;
+        *Microsoft*|*WSL*)
+            # For Windows Subsystem for Linux (WSL)
+            sudo apt update
+            sudo apt install -y python3 python3-pip
             ;;
         *)
             echo -e "${RED}Unsupported OS! Please install Python manually.${NC}"
@@ -72,7 +83,11 @@ for module in "${REQUIRED_MODULES[@]}"; do
     else
         echo -e "${YELLOW}$module is not installed. Installing...${NC}"
         pip install "$module"
-        echo -e "${BLUE}$module has been installed.${NC}"
+        if check_module "$module"; then
+            echo -e "${BLUE}$module has been installed.${NC}"
+        else
+            echo -e "${RED}Failed to install $module.${NC}"
+        fi
     fi
 done
 
